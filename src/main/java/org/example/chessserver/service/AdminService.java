@@ -83,6 +83,7 @@ public class AdminService {
                     .isBanned(u.getIsBanned())
                     .countryCode(u.getCountryCode())
                     .rating(rating)
+                    .rainbowNameEnabled(Boolean.TRUE.equals(u.getRainbowNameEnabled()))
                     .createdAt(u.getCreatedAt())
                     .build();
         }).collect(Collectors.toList());
@@ -100,6 +101,7 @@ public class AdminService {
                 .isBanned(u.getIsBanned())
                 .countryCode(u.getCountryCode())
                 .rating(rating)
+                .rainbowNameEnabled(Boolean.TRUE.equals(u.getRainbowNameEnabled()))
                 .createdAt(u.getCreatedAt())
                 .build();
     }

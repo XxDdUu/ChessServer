@@ -147,4 +147,32 @@ class UserControllerMessagesTest {
         assertTrue(response.getBody() instanceof Map);
         assertEquals(true, ((Map<?, ?>) response.getBody()).get("success"));
     }
+
+    @Test
+    void testBroadcastMessage_AllowedForAdmin() {
+        mockAuth(adminUser);
+        AdminMessageRequest req = AdminMessageRequest.builder()
+                .title("Notice")
+                .content("Content")
+                .build();
+
+        when(adminMessageService.broadcastMessage(eq(1), eq("Admin"), any(AdminMessageRequest.class)))
+                .thenReturn(Map.of("message", "Broadcast sent"));
+
+        ResponseEntity<?> response = userController.broadcastMessage(req, request);
+        assertEquals(200, response.getStatusCode().value());
+    }
+
+    @Test
+    void testBroadcastMessage_ForbiddenForRegularUser() {
+        mockAuth(regularUser);
+        AdminMessageRequest req = AdminMessageRequest.builder()
+                .title("Notice")
+                .content("Content")
+                .build();
+
+        assertThrows(AccessDeniedException.class, () -> {
+            userController.broadcastMessage(req, request);
+        });
+    }
 }

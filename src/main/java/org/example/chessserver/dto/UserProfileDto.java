@@ -20,5 +20,7 @@ public class UserProfileDto {
     private Integer silverMedals;
     private Integer bronzeMedals;
     private String friendshipStatus;
+    private String role;
+    private Boolean rainbowNameEnabled;
     private List<UserTournamentDto> tournamentHistory;
 }

@@ -475,6 +475,33 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
         return session != null && session.isOpen();
     }
 
+    public Set<Integer> getOnlineUserIds() {
+        Set<Integer> online = new HashSet<>();
+        for (Map.Entry<Integer, WebSocketSession> entry : sessions.entrySet()) {
+            if (entry.getValue() != null && entry.getValue().isOpen()) {
+                online.add(entry.getKey());
+            }
+        }
+        return online;
+    }
+
+    public int broadcastToAllOnline(String message) {
+        int count = 0;
+        TextMessage textMessage = new TextMessage(message);
+        for (Map.Entry<Integer, WebSocketSession> entry : sessions.entrySet()) {
+            try {
+                WebSocketSession session = entry.getValue();
+                if (session != null && session.isOpen()) {
+                    session.sendMessage(textMessage);
+                    count++;
+                }
+            } catch (Exception e) {
+                log.error("Failed to broadcast message to user " + entry.getKey(), e);
+            }
+        }
+        return count;
+    }
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         int userId = getUserIdBySession(session);

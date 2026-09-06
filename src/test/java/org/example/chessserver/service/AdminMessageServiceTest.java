@@ -115,4 +115,42 @@ class AdminMessageServiceTest {
         adminMessageService.markAllAsRead(2);
         verify(adminMessageRepository).markAllAsRead(2);
     }
+
+    @Test
+    void testBroadcastMessage() throws Exception {
+        User u1 = new User();
+        u1.setUserId(2);
+        u1.setUsername("user1");
+
+        User u2 = new User();
+        u2.setUserId(3);
+        u2.setUsername("user2");
+
+        when(userRepository.findAll()).thenReturn(List.of(u1, u2));
+        when(adminMessageRepository.saveAll(anyList())).thenAnswer(inv -> {
+            List<AdminMessage> list = inv.getArgument(0);
+            long id = 10;
+            for (AdminMessage m : list) {
+                m.setId(id++);
+            }
+            return list;
+        });
+
+        when(webSocketHandler.getOnlineUserIds()).thenReturn(java.util.Set.of(2));
+
+        AdminMessageRequest req = AdminMessageRequest.builder()
+                .title("Thông báo bảo trì")
+                .content("Hệ thống bảo trì lúc 23:00")
+                .type("ANNOUNCEMENT")
+                .build();
+
+        java.util.Map<String, Object> res = adminMessageService.broadcastMessage(1, "Admin", req);
+
+        assertNotNull(res);
+        assertEquals(2, res.get("totalRecipients"));
+        assertEquals(1, res.get("onlineRecipientsNotified"));
+        verify(adminMessageRepository, times(1)).saveAll(anyList());
+        verify(webSocketHandler, times(1)).sendToUser(eq(2), anyString());
+        verify(webSocketHandler, never()).sendToUser(eq(3), anyString());
+    }
 }

@@ -41,6 +41,10 @@ public class AdminMessage {
     @Builder.Default
     private Boolean isRead = false;
 
+    @Column(name = "is_broadcast")
+    @Builder.Default
+    private Boolean isBroadcast = false;
+
     @Column(name = "sent_at")
     private ZonedDateTime sentAt;
 }

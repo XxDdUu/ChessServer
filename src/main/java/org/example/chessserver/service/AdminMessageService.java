@@ -122,10 +122,31 @@ public class AdminMessageService {
     }
 
     public List<AdminMessageDto> getAllMessages() {
-        return adminMessageRepository.findAllByOrderBySentAtDesc()
-                .stream()
-                .map(AdminMessageDto::fromEntity)
-                .collect(Collectors.toList());
+        List<AdminMessage> all = adminMessageRepository.findAllByOrderBySentAtDesc();
+        java.util.Map<String, AdminMessageDto> broadcastSeen = new java.util.LinkedHashMap<>();
+        List<AdminMessageDto> result = new java.util.ArrayList<>();
+
+        for (AdminMessage m : all) {
+            if (Boolean.TRUE.equals(m.getIsBroadcast())) {
+                String key = (m.getTitle() != null ? m.getTitle() : "") + "|" +
+                             (m.getContent() != null ? m.getContent() : "") + "|" +
+                             (m.getSentAt() != null ? m.getSentAt().toEpochSecond() : "");
+                if (!broadcastSeen.containsKey(key)) {
+                    AdminMessageDto dto = AdminMessageDto.fromEntity(m);
+                    dto.setRecipientUsername("Tất cả người dùng");
+                    dto.setReceiverUsername("Tất cả người dùng");
+                    dto.setRecipientId(null);
+                    dto.setReceiverId(null);
+                    dto.setIsBroadcast(true);
+                    dto.setSendToAll(true);
+                    broadcastSeen.put(key, dto);
+                    result.add(dto);
+                }
+            } else {
+                result.add(AdminMessageDto.fromEntity(m));
+            }
+        }
+        return result;
     }
 
     @Transactional
@@ -136,5 +157,96 @@ public class AdminMessageService {
     @Transactional
     public void markAllAsRead(Integer userId) {
         adminMessageRepository.markAllAsRead(userId);
+    }
+
+    @Transactional
+    public java.util.Map<String, Object> broadcastMessage(Integer senderId, String senderUsername, AdminMessageRequest request) {
+        String tempSender = senderUsername;
+        if (tempSender == null || tempSender.isBlank()) {
+            if (senderId != null) {
+                tempSender = userRepository.findById(senderId).map(User::getUsername).orElse("Admin");
+            } else {
+                tempSender = "Admin";
+            }
+        }
+        final String resolvedSender = tempSender;
+
+        String resolvedTitle = (request.getTitle() != null && !request.getTitle().isBlank())
+                ? request.getTitle()
+                : "Thông báo từ Quản trị viên";
+
+        String resolvedContent = request.getContent() != null ? request.getContent() : "";
+
+        String resolvedType = (request.getType() != null && !request.getType().isBlank())
+                ? request.getType().toUpperCase()
+                : "ANNOUNCEMENT";
+
+        List<User> allUsers = userRepository.findAll();
+        ZonedDateTime now = ZonedDateTime.now();
+
+        List<AdminMessage> messages = allUsers.stream().map(u -> AdminMessage.builder()
+                .senderId(senderId)
+                .senderUsername(resolvedSender)
+                .recipientId(u.getUserId())
+                .recipientUsername(u.getUsername())
+                .title(resolvedTitle)
+                .content(resolvedContent)
+                .type(resolvedType)
+                .isRead(false)
+                .isBroadcast(true)
+                .sentAt(now)
+                .build()
+        ).collect(Collectors.toList());
+
+        List<AdminMessage> savedMessages = adminMessageRepository.saveAll(messages);
+
+        // Real-time broadcast to all currently connected users
+        int onlineNotified = 0;
+        try {
+            if (webSocketHandler != null) {
+                java.util.Set<Integer> onlineIds = webSocketHandler.getOnlineUserIds();
+                for (AdminMessage m : savedMessages) {
+                    if (onlineIds.contains(m.getRecipientId())) {
+                        JSONObject wsMsg = new JSONObject()
+                                .put("type", "ADMIN_DIRECT_MESSAGE")
+                                .put("id", m.getId())
+                                .put("messageId", m.getId())
+                                .put("recipientId", m.getRecipientId())
+                                .put("receiverId", m.getRecipientId())
+                                .put("recipientUsername", m.getRecipientUsername())
+                                .put("receiverUsername", m.getRecipientUsername())
+                                .put("senderUsername", resolvedSender)
+                                .put("senderName", resolvedSender)
+                                .put("senderId", senderId)
+                                .put("title", resolvedTitle)
+                                .put("subject", resolvedTitle)
+                                .put("content", resolvedContent)
+                                .put("message", resolvedContent)
+                                .put("body", resolvedContent)
+                                .put("messageType", resolvedType)
+                                .put("category", resolvedType)
+                                .put("sentAt", m.getSentAt().toString())
+                                .put("createdAt", m.getSentAt().toString())
+                                .put("read", false)
+                                .put("isRead", false)
+                                .put("isBroadcast", true);
+
+                        webSocketHandler.sendToUser(m.getRecipientId(), wsMsg.toString());
+                        onlineNotified++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to broadcast real-time WebSocket message: {}", e.getMessage());
+        }
+
+        return java.util.Map.of(
+                "message", "Broadcast message sent successfully to all users",
+                "totalRecipients", savedMessages.size(),
+                "onlineRecipientsNotified", onlineNotified,
+                "title", resolvedTitle,
+                "type", resolvedType,
+                "sentAt", now.toString()
+        );
     }
 }

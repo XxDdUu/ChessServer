@@ -18,4 +18,6 @@ public class LeaderboardDto {
     private int losses;
     private int draws;
     private String countryCode;
+    private String role;
+    private Boolean rainbowNameEnabled;
 }

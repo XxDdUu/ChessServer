@@ -115,4 +115,37 @@ class AdminControllerMessagesTest {
         assertEquals(200, response.getStatusCode().value());
         assertEquals(2, response.getBody().size());
     }
+
+    @Test
+    void testBroadcastMessage() {
+        mockAdminAuth();
+        AdminMessageRequest req = AdminMessageRequest.builder()
+                .title("Bảo trì")
+                .content("Bảo trì")
+                .build();
+
+        when(adminMessageService.broadcastMessage(eq(1), eq("AdminMaster"), any(AdminMessageRequest.class)))
+                .thenReturn(java.util.Map.of("message", "Success", "totalRecipients", 10));
+
+        ResponseEntity<?> response = adminController.broadcastMessage(request, req);
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody() instanceof java.util.Map);
+    }
+
+    @Test
+    void testSendAdminMessage_WithSendToAll() {
+        mockAdminAuth();
+        AdminMessageRequest req = AdminMessageRequest.builder()
+                .title("Bảo trì")
+                .content("Bảo trì")
+                .sendToAll(true)
+                .build();
+
+        when(adminMessageService.broadcastMessage(eq(1), eq("AdminMaster"), any(AdminMessageRequest.class)))
+                .thenReturn(java.util.Map.of("message", "Success", "totalRecipients", 10));
+
+        ResponseEntity<?> response = adminController.sendAdminMessage(request, req);
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody() instanceof java.util.Map);
+    }
 }

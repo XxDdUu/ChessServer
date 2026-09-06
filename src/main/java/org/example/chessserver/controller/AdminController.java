@@ -168,15 +168,35 @@ public class AdminController {
         return ResponseEntity.ok(adminMessageService.getAllMessages());
     }
 
-    @PostMapping("/messages")
-    public ResponseEntity<AdminMessageDto> sendAdminMessage(
+    @GetMapping("/messages/broadcast")
+    public ResponseEntity<List<AdminMessageDto>> getBroadcastMessages(HttpServletRequest request) {
+        verifyAdmin(request);
+        return ResponseEntity.ok(adminMessageService.getAllMessages().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getIsBroadcast()))
+                .toList());
+    }
+
+    @PostMapping("/messages/broadcast")
+    public ResponseEntity<?> broadcastMessage(
             HttpServletRequest request,
             @RequestBody AdminMessageRequest messageRequest) {
         int adminId = verifyAdmin(request);
         User admin = userRepository.findById(adminId).orElse(null);
         String adminName = admin != null ? admin.getUsername() : "Admin";
-        if (messageRequest.getRecipientId() == null) {
-            throw new IllegalArgumentException("recipientId is required");
+        Map<String, Object> result = adminMessageService.broadcastMessage(adminId, adminName, messageRequest);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/messages")
+    public ResponseEntity<?> sendAdminMessage(
+            HttpServletRequest request,
+            @RequestBody AdminMessageRequest messageRequest) {
+        int adminId = verifyAdmin(request);
+        User admin = userRepository.findById(adminId).orElse(null);
+        String adminName = admin != null ? admin.getUsername() : "Admin";
+        if (Boolean.TRUE.equals(messageRequest.getSendToAll()) || messageRequest.getRecipientId() == null) {
+            Map<String, Object> result = adminMessageService.broadcastMessage(adminId, adminName, messageRequest);
+            return ResponseEntity.ok(result);
         }
         AdminMessageDto created = adminMessageService.sendMessage(adminId, adminName, messageRequest.getRecipientId(), messageRequest);
         return ResponseEntity.ok(created);

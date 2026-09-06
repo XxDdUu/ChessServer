@@ -27,12 +27,15 @@ public class AdminMessageDto {
     private String type;
     private Boolean read;
     private Boolean isRead;
+    private Boolean isBroadcast;
+    private Boolean sendToAll;
     private ZonedDateTime sentAt;
     private ZonedDateTime createdAt;
 
     public static AdminMessageDto fromEntity(AdminMessage entity) {
         if (entity == null) return null;
         boolean readStatus = Boolean.TRUE.equals(entity.getIsRead());
+        boolean broadcastStatus = Boolean.TRUE.equals(entity.getIsBroadcast());
         return AdminMessageDto.builder()
                 .id(entity.getId())
                 .messageId(entity.getId())
@@ -51,6 +54,8 @@ public class AdminMessageDto {
                 .type(entity.getType() != null ? entity.getType() : "INFO")
                 .read(readStatus)
                 .isRead(readStatus)
+                .isBroadcast(broadcastStatus)
+                .sendToAll(broadcastStatus)
                 .sentAt(entity.getSentAt())
                 .createdAt(entity.getSentAt())
                 .build();

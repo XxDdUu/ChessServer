@@ -25,4 +25,7 @@ public class AdminMessageRequest {
 
     @JsonAlias({"senderUsername"})
     private String senderName;
+
+    @JsonAlias({"broadcast", "isBroadcast", "allUsers", "toAll"})
+    private Boolean sendToAll;
 }

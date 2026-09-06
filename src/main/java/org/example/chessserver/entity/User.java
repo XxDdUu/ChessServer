@@ -33,6 +33,9 @@ public class User {
     @Column(name = "is_banned")
     private Boolean isBanned = false;
 
+    @Column(name = "rainbow_name_enabled")
+    private Boolean rainbowNameEnabled = false;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private ZonedDateTime createdAt;
 }

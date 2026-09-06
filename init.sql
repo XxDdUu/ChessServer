@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     country_code VARCHAR(2) DEFAULT 'VN',
     role VARCHAR(20) DEFAULT 'ROLE_USER',
     is_banned BOOLEAN DEFAULT FALSE,
+    rainbow_name_enabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -214,6 +215,7 @@ ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS black_ready BOOLEAN DEF
 ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS lobby_started_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE tournament_rounds ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS rainbow_name_enabled BOOLEAN DEFAULT FALSE;
 
 -- 11. Bảng Tin nhắn Trực tiếp từ Admin (Admin Messages)
 CREATE TABLE IF NOT EXISTS admin_messages (
@@ -226,8 +228,11 @@ CREATE TABLE IF NOT EXISTS admin_messages (
     content TEXT,
     type VARCHAR(30) DEFAULT 'INFO',
     is_read BOOLEAN DEFAULT FALSE,
+    is_broadcast BOOLEAN DEFAULT FALSE,
     sent_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE admin_messages ADD COLUMN IF NOT EXISTS is_broadcast BOOLEAN DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS ix_admin_messages_recipient_id ON admin_messages (recipient_id);
 CREATE INDEX IF NOT EXISTS ix_admin_messages_sent_at ON admin_messages (sent_at DESC);

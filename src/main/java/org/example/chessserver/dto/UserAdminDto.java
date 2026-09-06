@@ -15,5 +15,6 @@ public class UserAdminDto {
     private Boolean isBanned;
     private String countryCode;
     private Integer rating;
+    private Boolean rainbowNameEnabled;
     private ZonedDateTime createdAt;
 }

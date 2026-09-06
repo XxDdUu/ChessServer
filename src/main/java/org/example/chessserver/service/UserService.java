@@ -116,6 +116,8 @@ public class UserService {
                 .silverMedals(silver)
                 .bronzeMedals(bronze)
                 .friendshipStatus(friendshipStatus)
+                .role(user.getRole())
+                .rainbowNameEnabled(Boolean.TRUE.equals(user.getRainbowNameEnabled()))
                 .tournamentHistory(tournamentHistory)
                 .build();
     }
@@ -131,6 +133,8 @@ public class UserService {
                         .losses(elo.getLosses())
                         .draws(elo.getDraws())
                         .countryCode(elo.getUser().getCountryCode())
+                        .role(elo.getUser().getRole())
+                        .rainbowNameEnabled(Boolean.TRUE.equals(elo.getUser().getRainbowNameEnabled()))
                         .build())
                 .collect(Collectors.toList());
     }

@@ -97,17 +97,39 @@ This document provides instructions for the frontend implementation to interact 
   * Mark message as read.
 * **Endpoint:** `POST /api/user/{userId}/messages/read-all`
   * Mark all inbox messages as read.
+* **Endpoint:** `POST /api/admin/messages/broadcast` (or `POST /api/user/messages/broadcast`)
+  * Broadcast a message to **all registered users**. Requires Admin JWT.
+  * **Request Body:**
+    ```json
+    {
+      "title": "Bảo trì máy chủ",
+      "content": "Máy chủ sẽ bảo trì trong 30 phút",
+      "type": "ANNOUNCEMENT"
+    }
+    ```
+  * **Response:**
+    ```json
+    {
+      "message": "Broadcast message sent successfully to all users",
+      "totalRecipients": 150,
+      "onlineRecipientsNotified": 12,
+      "title": "Bảo trì máy chủ",
+      "type": "ANNOUNCEMENT",
+      "sentAt": "2026-09-06T19:30:00Z"
+    }
+    ```
 * **WebSocket Notification:**
-  * When an admin sends a message, online recipients automatically receive:
+  * When an admin sends a message or broadcast, online recipients automatically receive:
     ```json
     {
       "type": "ADMIN_DIRECT_MESSAGE",
       "id": 1,
       "recipientId": 2,
       "senderUsername": "Admin",
-      "title": "Cảnh báo vi phạm",
+      "title": "Bảo trì máy chủ",
       "content": "...",
-      "messageType": "WARNING"
+      "messageType": "ANNOUNCEMENT",
+      "isBroadcast": true
     }
     ```
 
