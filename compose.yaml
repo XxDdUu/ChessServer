@@ -42,6 +42,11 @@ services:
       SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-redis}
       SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
 
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-tranquangduy15122006@gmail.com}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-iity tvey fnrj fkum}
+
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-599331175768-2rk7fdpri16ncb3iu3sbful0hslehdq7.apps.googleusercontent.com}
       AI_API_URL: ${AI_API_URL:-http://host.docker.internal:3210/api}
     extra_hosts:
