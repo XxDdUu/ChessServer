@@ -1,0 +1,30 @@
+name: Deploy ChessServer
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy
+        run: |
+          set -e
+
+          cd /home/thitheo/ChessServer
+
+          echo "=== Pull latest code ==="
+          git fetch server
+          git reset --hard server/master
+
+          echo "=== Build backend ==="
+          docker compose build backend
+
+          echo "=== Restart backend ==="
+          docker compose up -d backend
+
+          echo "=== Status ==="
+          docker ps
