@@ -2,6 +2,8 @@ package org.example.chessserver.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.example.chessserver.dto.AdminMessageDto;
+import org.example.chessserver.dto.AdminMessageRequest;
 import org.example.chessserver.dto.DashboardStatsDto;
 import org.example.chessserver.dto.TournamentDto;
 import org.example.chessserver.dto.TournamentRequest;
@@ -9,6 +11,7 @@ import org.example.chessserver.dto.UserAdminDto;
 import org.example.chessserver.entity.User;
 import org.example.chessserver.repository.UserRepository;
 import org.example.chessserver.security.JwtUtil;
+import org.example.chessserver.service.AdminMessageService;
 import org.example.chessserver.service.AdminService;
 import org.example.chessserver.service.TournamentService;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+    private final AdminMessageService adminMessageService;
     private final TournamentService tournamentService;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
@@ -107,7 +111,6 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "Tournament cancelled successfully"));
     }
 
-
     @PostMapping("/tournaments/{tournamentId}/finish")
     public ResponseEntity<?> finishTournament(
             HttpServletRequest request,
@@ -136,5 +139,46 @@ public class AdminController {
         verifyAdmin(request);
         tournamentService.submitPairingGame(pairingId, body);
         return ResponseEntity.ok(Map.of("message", "Simulated game submitted successfully"));
+    }
+
+    // Direct Messaging Endpoints
+    @GetMapping("/users/{userId}/messages")
+    public ResponseEntity<List<AdminMessageDto>> getUserDirectMessages(
+            HttpServletRequest request,
+            @PathVariable int userId) {
+        verifyAdmin(request);
+        return ResponseEntity.ok(adminMessageService.getUserMessages(userId));
+    }
+
+    @PostMapping("/users/{userId}/messages")
+    public ResponseEntity<AdminMessageDto> sendDirectMessageToUser(
+            HttpServletRequest request,
+            @PathVariable int userId,
+            @RequestBody AdminMessageRequest messageRequest) {
+        int adminId = verifyAdmin(request);
+        User admin = userRepository.findById(adminId).orElse(null);
+        String adminName = admin != null ? admin.getUsername() : "Admin";
+        AdminMessageDto created = adminMessageService.sendMessage(adminId, adminName, userId, messageRequest);
+        return ResponseEntity.ok(created);
+    }
+
+    @GetMapping("/messages")
+    public ResponseEntity<List<AdminMessageDto>> getAllDirectMessages(HttpServletRequest request) {
+        verifyAdmin(request);
+        return ResponseEntity.ok(adminMessageService.getAllMessages());
+    }
+
+    @PostMapping("/messages")
+    public ResponseEntity<AdminMessageDto> sendAdminMessage(
+            HttpServletRequest request,
+            @RequestBody AdminMessageRequest messageRequest) {
+        int adminId = verifyAdmin(request);
+        User admin = userRepository.findById(adminId).orElse(null);
+        String adminName = admin != null ? admin.getUsername() : "Admin";
+        if (messageRequest.getRecipientId() == null) {
+            throw new IllegalArgumentException("recipientId is required");
+        }
+        AdminMessageDto created = adminMessageService.sendMessage(adminId, adminName, messageRequest.getRecipientId(), messageRequest);
+        return ResponseEntity.ok(created);
     }
 }

@@ -214,3 +214,20 @@ ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS black_ready BOOLEAN DEF
 ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS lobby_started_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE tournament_rounds ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP WITH TIME ZONE;
+
+-- 11. Bảng Tin nhắn Trực tiếp từ Admin (Admin Messages)
+CREATE TABLE IF NOT EXISTS admin_messages (
+    message_id SERIAL PRIMARY KEY,
+    sender_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    sender_username VARCHAR(50),
+    recipient_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    recipient_username VARCHAR(50),
+    title VARCHAR(255),
+    content TEXT,
+    type VARCHAR(30) DEFAULT 'INFO',
+    is_read BOOLEAN DEFAULT FALSE,
+    sent_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS ix_admin_messages_recipient_id ON admin_messages (recipient_id);
+CREATE INDEX IF NOT EXISTS ix_admin_messages_sent_at ON admin_messages (sent_at DESC);

@@ -63,6 +63,54 @@ This document provides instructions for the frontend implementation to interact 
 **Endpoint:** `POST /api/friends/accept?user1={id}&user2={id}`
 **Response:** `Friend request accepted` (String)
 
+### 1.4 Admin Direct Messaging
+* **Endpoint:** `GET /api/user/{userId}/messages`
+  * Returns user's inbox messages sent by Admin. Requires JWT (user themselves or Admin).
+* **Endpoint:** `POST /api/user/{userId}/messages`
+  * Send direct message from Admin to a user. Requires Admin JWT.
+  * **Request Body:**
+    ```json
+    {
+      "title": "Cảnh báo vi phạm",
+      "content": "Vui lòng tuân thủ quy tắc ứng xử",
+      "type": "WARNING"
+    }
+    ```
+  * **Response:**
+    ```json
+    {
+      "id": 1,
+      "messageId": 1,
+      "senderId": 1,
+      "senderUsername": "Admin",
+      "recipientId": 2,
+      "recipientUsername": "thanglm",
+      "title": "Cảnh báo vi phạm",
+      "content": "Vui lòng tuân thủ quy tắc ứng xử",
+      "type": "WARNING",
+      "read": false,
+      "isRead": false,
+      "sentAt": "2026-09-05T21:00:00Z"
+    }
+    ```
+* **Endpoint:** `POST /api/user/{userId}/messages/{messageId}/read`
+  * Mark message as read.
+* **Endpoint:** `POST /api/user/{userId}/messages/read-all`
+  * Mark all inbox messages as read.
+* **WebSocket Notification:**
+  * When an admin sends a message, online recipients automatically receive:
+    ```json
+    {
+      "type": "ADMIN_DIRECT_MESSAGE",
+      "id": 1,
+      "recipientId": 2,
+      "senderUsername": "Admin",
+      "title": "Cảnh báo vi phạm",
+      "content": "...",
+      "messageType": "WARNING"
+    }
+    ```
+
 **Error Response (Global):**
 ```json
 {

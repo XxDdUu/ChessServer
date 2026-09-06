@@ -93,6 +93,7 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
                 case "INVITE_FRIEND" -> handleInviteFriend(json, userId);
                 case "ACCEPT_INVITE" -> handleAcceptInvite(json.getInt("hostId"), userId);
                 case "TOURNAMENT_JOIN_LOBBY" -> tournamentService.joinLobby(json.getInt("pairingId"), userId);
+                case "ADMIN_DIRECT_MESSAGE" -> handleAdminDirectMessage(json, userId);
             }
         } catch (Exception e) {
             log.error("Error handling web socket text message", e);
@@ -519,4 +520,22 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
             log.error("Failed to handle active turn timeout for game " + gameId, e);
         }
     }
+
+    private void handleAdminDirectMessage(JSONObject json, int userId) {
+        try {
+            User sender = userRepository.findById(userId).orElse(null);
+            if (sender == null || !"ROLE_ADMIN".equals(sender.getRole())) {
+                log.warn("Non-admin user {} attempted to broadcast ADMIN_DIRECT_MESSAGE", userId);
+                return;
+            }
+
+            int recipientId = json.optInt("recipientId", json.optInt("receiverId", -1));
+            if (recipientId != -1 && isUserOnline(recipientId)) {
+                sendToUser(recipientId, json.toString());
+            }
+        } catch (Exception e) {
+            log.error("Failed to forward ADMIN_DIRECT_MESSAGE", e);
+        }
+    }
 }
+
