@@ -26,6 +26,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -214,13 +216,7 @@ public class AuthService {
                     user.getEmail()
             );
 
-            ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                    .httpOnly(true)
-                    .secure(false)
-                    .path("/")
-                    .maxAge(7 * 24 * 60 * 60)
-                    .sameSite("Lax")
-                    .build();
+            ResponseCookie cookie = buildRefreshTokenCookie(refreshToken);
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -353,13 +349,7 @@ public class AuthService {
                         user.getEmail()
                 );
 
-                ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                        .httpOnly(true)
-                        .secure(false)
-                        .path("/")
-                        .maxAge(7 * 24 * 60 * 60)
-                        .sameSite("Lax")
-                        .build();
+                ResponseCookie cookie = buildRefreshTokenCookie(refreshToken);
 
                 return ResponseEntity.ok()
                         .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -453,5 +443,25 @@ public class AuthService {
         
         userRepository.save(user);
         return ResponseEntity.ok(new MessageResponse("Bot account created successfully"));
+    }
+
+    private ResponseCookie buildRefreshTokenCookie(String refreshToken) {
+        boolean isSecure = false;
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                String proto = request.getHeader("X-Forwarded-Proto");
+                isSecure = request.isSecure() || "https".equalsIgnoreCase(proto);
+            }
+        } catch (Exception ignored) {}
+
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(isSecure)
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
     }
 }

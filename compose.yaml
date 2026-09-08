@@ -47,7 +47,7 @@ services:
       SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
       SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
 
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-599331175768-2rk7fdpri16ncb3iu3sbful0hslehdq7.apps.googleusercontent.com}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-818283934941-pkc6070np750322csfe1n6efpo1j1fsl.apps.googleusercontent.com}
       AI_API_URL: ${AI_API_URL:-http://host.docker.internal:3210/api}
     extra_hosts:
       - "host.docker.internal:host-gateway"
