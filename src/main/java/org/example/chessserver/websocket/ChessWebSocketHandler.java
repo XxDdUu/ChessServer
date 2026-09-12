@@ -56,13 +56,13 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
             }
             int userId = jwtUtil.getClaims(token).get("userId", Integer.class);
             User user = userRepository.findById(userId).orElse(null);
-            if (user != null && Boolean.TRUE.equals(user.getIsBanned())) {
-                session.close(CloseStatus.POLICY_VIOLATION.withReason("USER_BANNED"));
-                return;
-            }
+            boolean isBanned = user != null && Boolean.TRUE.equals(user.getIsBanned());
+            session.getAttributes().put("isBanned", isBanned);
             sessions.put(userId, session);
-            broadcastPresence(userId, true);
-            handleReconnection(userId);
+            if (!isBanned) {
+                broadcastPresence(userId, true);
+                handleReconnection(userId);
+            }
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
             session.close(CloseStatus.POLICY_VIOLATION.withReason("TOKEN_EXPIRED"));
         } catch (Exception e) {
@@ -77,6 +77,15 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
             String type = json.getString("type");
             int userId = getUserIdBySession(session);
             if (userId == -1) return;
+
+            boolean isBanned = Boolean.TRUE.equals(session.getAttributes().get("isBanned"));
+            if (isBanned && !"ADMIN_DIRECT_MESSAGE".equals(type) && !"PING".equals(type) && !"READ_MESSAGE".equals(type)) {
+                session.sendMessage(new TextMessage(new JSONObject()
+                        .put("type", "ERROR")
+                        .put("message", "Tài khoản của bạn đã bị khóa")
+                        .toString()));
+                return;
+            }
 
             switch (type) {
                 case "READY" -> handleReady(json.getString("gameId"), userId);
@@ -349,6 +358,18 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public static String getDisplayName(User user) {
+        if (user == null) return "Đối thủ";
+        String username = user.getUsername();
+        if (username == null || username.trim().isEmpty()) {
+            username = user.getEmail();
+        }
+        if (username != null && username.contains("@")) {
+            username = username.substring(0, username.indexOf("@"));
+        }
+        return (username != null && !username.trim().isEmpty()) ? username : "Đối thủ";
+    }
+
     private void handleReconnection(int userId) throws Exception {
         String gameId = redisTemplate.opsForValue().get("user:current_game:" + userId);
         if (gameId != null) {
@@ -356,6 +377,7 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
             if (data != null && !data.isEmpty()) {
                 int opponentId = Integer.parseInt(data.get("white")) == userId ? Integer.parseInt(data.get("black")) : Integer.parseInt(data.get("white"));
                 User opp = userRepository.findById(opponentId).orElse(null);
+                Integer oppRating = eloRatingRepository.findById(opponentId).map(EloRating::getRating).orElse(1200);
                 
                 List<String> history = gameRedisService.getHistory(gameId);
                 List<String> chat = gameRedisService.getChatHistory(gameId);
@@ -375,8 +397,12 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
                         .put("timeWhite", timeWhite)
                         .put("timeBlack", timeBlack)
                         .put("opponentId", opponentId)
-                        .put("opponentName", opp != null ? opp.getUsername() : "Opponent #" + opponentId)
-                        .put("opponentRating", 1200); 
+                        .put("opponentName", getDisplayName(opp))
+                        .put("opponentAvatarUrl", opp != null ? opp.getAvatarUrl() : null)
+                        .put("opponentAvatar", opp != null ? opp.getAvatarUrl() : null)
+                        .put("opponentRole", opp != null ? opp.getRole() : "ROLE_USER")
+                        .put("opponentCountry", opp != null ? opp.getCountryCode() : "VN")
+                        .put("opponentRating", oppRating); 
                 sendToUser(userId, msg.toString());
             }
         }
@@ -456,10 +482,39 @@ public class ChessWebSocketHandler extends TextWebSocketHandler {
 
     private void broadcastStart(String gId, int u1, int u2) {
         try {
-            sendToUser(u1, new JSONObject().put("type", "GAME_START").put("gameId", gId).put("side", "WHITE").put("opponent", u2).toString());
-            sendToUser(u2, new JSONObject().put("type", "GAME_START").put("gameId", gId).put("side", "BLACK").put("opponent", u1).toString());
+            User user1 = userRepository.findById(u1).orElse(null);
+            User user2 = userRepository.findById(u2).orElse(null);
+
+            Integer r1 = eloRatingRepository.findById(u1).map(EloRating::getRating).orElse(1200);
+            Integer r2 = eloRatingRepository.findById(u2).map(EloRating::getRating).orElse(1200);
+
+            sendToUser(u1, new JSONObject()
+                    .put("type", "GAME_START")
+                    .put("gameId", gId)
+                    .put("side", "WHITE")
+                    .put("opponent", u2)
+                    .put("opponentName", getDisplayName(user2))
+                    .put("opponentAvatarUrl", user2 != null ? user2.getAvatarUrl() : null)
+                    .put("opponentAvatar", user2 != null ? user2.getAvatarUrl() : null)
+                    .put("opponentRole", user2 != null ? user2.getRole() : "ROLE_USER")
+                    .put("opponentCountry", user2 != null ? user2.getCountryCode() : "VN")
+                    .put("opponentRating", r2)
+                    .toString());
+
+            sendToUser(u2, new JSONObject()
+                    .put("type", "GAME_START")
+                    .put("gameId", gId)
+                    .put("side", "BLACK")
+                    .put("opponent", u1)
+                    .put("opponentName", getDisplayName(user1))
+                    .put("opponentAvatarUrl", user1 != null ? user1.getAvatarUrl() : null)
+                    .put("opponentAvatar", user1 != null ? user1.getAvatarUrl() : null)
+                    .put("opponentRole", user1 != null ? user1.getRole() : "ROLE_USER")
+                    .put("opponentCountry", user1 != null ? user1.getCountryCode() : "VN")
+                    .put("opponentRating", r1)
+                    .toString());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to broadcast start message", e);
         }
     }
 

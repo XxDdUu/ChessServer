@@ -73,7 +73,10 @@ public class MatchmakingService {
                     .put("type", "PREPARE_GAME")
                     .put("gameId", gameId)
                     .put("opponentId", u2)
-                    .put("opponentName", user2 != null ? user2.getUsername() : "Unknown")
+                    .put("opponentName", ChessWebSocketHandler.getDisplayName(user2))
+                    .put("opponentAvatarUrl", user2 != null ? user2.getAvatarUrl() : null)
+                    .put("opponentAvatar", user2 != null ? user2.getAvatarUrl() : null)
+                    .put("opponentRole", user2 != null ? user2.getRole() : "ROLE_USER")
                     .put("opponentCountry", user2 != null ? user2.getCountryCode() : "??")
                     .put("opponentRating", r2)
                     .put("timeout", 10);
@@ -84,7 +87,10 @@ public class MatchmakingService {
                     .put("type", "PREPARE_GAME")
                     .put("gameId", gameId)
                     .put("opponentId", u1)
-                    .put("opponentName", user1 != null ? user1.getUsername() : "Unknown")
+                    .put("opponentName", ChessWebSocketHandler.getDisplayName(user1))
+                    .put("opponentAvatarUrl", user1 != null ? user1.getAvatarUrl() : null)
+                    .put("opponentAvatar", user1 != null ? user1.getAvatarUrl() : null)
+                    .put("opponentRole", user1 != null ? user1.getRole() : "ROLE_USER")
                     .put("opponentCountry", user1 != null ? user1.getCountryCode() : "??")
                     .put("opponentRating", r1)
                     .put("timeout", 10);

@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL, -- Hash từ Backend (Bcrypt/Argon2)
     country_code VARCHAR(2) DEFAULT 'VN',
+    preferred_language VARCHAR(10) DEFAULT NULL,
+    avatar_url VARCHAR(500) DEFAULT NULL,
+    bio VARCHAR(500) DEFAULT NULL,
     role VARCHAR(20) DEFAULT 'ROLE_USER',
     is_banned BOOLEAN DEFAULT FALSE,
     rainbow_name_enabled BOOLEAN DEFAULT FALSE,
@@ -216,6 +219,8 @@ ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS lobby_started_at TIMEST
 ALTER TABLE tournament_pairings ADD COLUMN IF NOT EXISTS is_bye BOOLEAN DEFAULT FALSE;
 ALTER TABLE tournament_rounds ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS rainbow_name_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500) DEFAULT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(500) DEFAULT NULL;
 
 -- 11. Bảng Tin nhắn Trực tiếp từ Admin (Admin Messages)
 CREATE TABLE IF NOT EXISTS admin_messages (

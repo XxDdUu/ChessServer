@@ -81,6 +81,9 @@ public class AdminService {
                     .email(u.getEmail())
                     .role(u.getRole())
                     .isBanned(u.getIsBanned())
+                    .banReason(u.getBanReason())
+                    .banDescription(u.getBanDescription())
+                    .bannedByUser(u.getBannedByUser())
                     .countryCode(u.getCountryCode())
                     .rating(rating)
                     .rainbowNameEnabled(Boolean.TRUE.equals(u.getRainbowNameEnabled()))
@@ -99,6 +102,9 @@ public class AdminService {
                 .email(u.getEmail())
                 .role(u.getRole())
                 .isBanned(u.getIsBanned())
+                .banReason(u.getBanReason())
+                .banDescription(u.getBanDescription())
+                .bannedByUser(u.getBannedByUser())
                 .countryCode(u.getCountryCode())
                 .rating(rating)
                 .rainbowNameEnabled(Boolean.TRUE.equals(u.getRainbowNameEnabled()))
@@ -108,9 +114,22 @@ public class AdminService {
 
     @Transactional
     public void banUser(int userId) {
+        banUser(userId, null, null, null);
+    }
+
+    @Transactional
+    public void banUser(int userId, String reason, String description) {
+        banUser(userId, reason, description, null);
+    }
+
+    @Transactional
+    public void banUser(int userId, String reason, String description, String bannedByUser) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setIsBanned(true);
+        user.setBanReason(reason != null && !reason.trim().isEmpty() ? reason.trim() : "Vi phạm Quy định của hệ thống");
+        user.setBanDescription(description != null && !description.trim().isEmpty() ? description.trim() : "Tài khoản của bạn đã bị Quản trị viên khóa do vi phạm điều khoản sử dụng. Vui lòng kiểm tra Hộp Thư Thông Báo để biết thêm chi tiết.");
+        user.setBannedByUser(bannedByUser != null && !bannedByUser.trim().isEmpty() ? bannedByUser.trim() : "Quản trị viên");
         userRepository.save(user);
     }
 
@@ -119,6 +138,9 @@ public class AdminService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setIsBanned(false);
+        user.setBanReason(null);
+        user.setBanDescription(null);
+        user.setBannedByUser(null);
         userRepository.save(user);
     }
 }

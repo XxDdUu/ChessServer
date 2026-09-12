@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping({"/api/user", "/api/users"})
 @RequiredArgsConstructor
 public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
@@ -143,61 +143,81 @@ public class UserController {
         return "ROLE_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role) || "admin".equalsIgnoreCase(user.getUsername());
     }
 
-    @RequestMapping(value = {"/me/rainbow-name", "/me/profile"}, method = {RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.POST})
+    @RequestMapping(value = "/me/rainbow-name", method = {RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<?> updateRainbowName(
             @RequestBody(required = false) Map<String, Object> body,
             HttpServletRequest request) {
-        User caller = extractUser(request);
-        if (!isAdmin(caller)) {
-            throw new AccessDeniedException("Only administrators can configure rainbow admin name");
-        }
+        return updateProfile(body, request);
+    }
 
-        Boolean enabled = null;
+    @RequestMapping(value = {"/me/profile", "/me"}, method = {RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.POST})
+    public ResponseEntity<?> updateProfile(
+            @RequestBody(required = false) Map<String, Object> body,
+            HttpServletRequest request) {
+        User caller = extractUser(request);
+
+        Boolean rainbowEnabled = caller.getRainbowNameEnabled();
+
         if (body != null) {
-            if (body.containsKey("rainbowNameEnabled")) {
-                Object val = body.get("rainbowNameEnabled");
-                if (val instanceof Boolean) {
-                    enabled = (Boolean) val;
-                } else if (val != null) {
-                    enabled = Boolean.parseBoolean(val.toString());
+            if (body.containsKey("avatarUrl")) {
+                Object val = body.get("avatarUrl");
+                if (val != null) caller.setAvatarUrl(val.toString());
+            } else if (body.containsKey("avatar")) {
+                Object val = body.get("avatar");
+                if (val != null) caller.setAvatarUrl(val.toString());
+            }
+
+            if (body.containsKey("bio")) {
+                Object val = body.get("bio");
+                if (val != null) caller.setBio(val.toString());
+            }
+
+            if (body.containsKey("countryCode")) {
+                Object val = body.get("countryCode");
+                if (val != null) caller.setCountryCode(val.toString());
+            }
+
+            if (body.containsKey("rainbowNameEnabled") || body.containsKey("enabled")) {
+                if (!isAdmin(caller)) {
+                    throw new AccessDeniedException("Only administrators can configure rainbow admin name");
                 }
-            } else if (body.containsKey("enabled")) {
-                Object val = body.get("enabled");
+                Object val = body.containsKey("rainbowNameEnabled") ? body.get("rainbowNameEnabled") : body.get("enabled");
                 if (val instanceof Boolean) {
-                    enabled = (Boolean) val;
+                    rainbowEnabled = (Boolean) val;
                 } else if (val != null) {
-                    enabled = Boolean.parseBoolean(val.toString());
+                    rainbowEnabled = Boolean.parseBoolean(val.toString());
                 }
+                caller.setRainbowNameEnabled(rainbowEnabled);
             }
         }
 
-        if (enabled == null) {
-            enabled = false;
-        }
-
-        caller.setRainbowNameEnabled(enabled);
         userRepository.save(caller);
 
-        // Broadcast real-time WebSocket event to all connected users
-        try {
-            if (webSocketHandler != null) {
-                JSONObject wsMsg = new JSONObject()
-                        .put("type", "ADMIN_PROFILE_UPDATED")
-                        .put("adminId", caller.getUserId())
-                        .put("userId", caller.getUserId())
-                        .put("adminUsername", caller.getUsername())
-                        .put("rainbowNameEnabled", enabled);
-                webSocketHandler.broadcastToAllOnline(wsMsg.toString());
+        // Broadcast real-time WebSocket event if rainbow status changed
+        if (body != null && (body.containsKey("rainbowNameEnabled") || body.containsKey("enabled"))) {
+            try {
+                if (webSocketHandler != null) {
+                    JSONObject wsMsg = new JSONObject()
+                            .put("type", "ADMIN_PROFILE_UPDATED")
+                            .put("adminId", caller.getUserId())
+                            .put("userId", caller.getUserId())
+                            .put("adminUsername", caller.getUsername())
+                            .put("rainbowNameEnabled", Boolean.TRUE.equals(caller.getRainbowNameEnabled()));
+                    webSocketHandler.broadcastToAllOnline(wsMsg.toString());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to broadcast real-time rainbow status update: {}", e.getMessage());
             }
-        } catch (Exception e) {
-            log.warn("Failed to broadcast real-time rainbow status update: {}", e.getMessage());
         }
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "userId", caller.getUserId(),
                 "username", caller.getUsername(),
-                "rainbowNameEnabled", enabled
+                "avatarUrl", caller.getAvatarUrl() != null ? caller.getAvatarUrl() : "",
+                "bio", caller.getBio() != null ? caller.getBio() : "",
+                "countryCode", caller.getCountryCode() != null ? caller.getCountryCode() : "",
+                "rainbowNameEnabled", Boolean.TRUE.equals(caller.getRainbowNameEnabled())
         ));
     }
 
@@ -217,5 +237,41 @@ public class UserController {
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
+    }
+
+    @RequestMapping(value = {"/me/preferences", "/me/language"}, method = {RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.POST})
+    public ResponseEntity<?> updatePreferences(
+            @RequestBody(required = false) Map<String, Object> body,
+            HttpServletRequest request) {
+        User caller = extractUser(request);
+
+        String lang = null;
+        if (body != null) {
+            if (body.containsKey("language")) {
+                Object val = body.get("language");
+                if (val != null) lang = val.toString().trim().toLowerCase();
+            } else if (body.containsKey("preferredLanguage")) {
+                Object val = body.get("preferredLanguage");
+                if (val != null) lang = val.toString().trim().toLowerCase();
+            }
+        }
+
+        List<String> supportedLanguages = List.of("vi", "en", "zh", "ko");
+        if (lang == null || !supportedLanguages.contains(lang)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", 400,
+                    "error", "Bad Request",
+                    "message", "Unsupported language value. Allowed values are: vi, en, zh, ko"
+            ));
+        }
+
+        caller.setPreferredLanguage(lang);
+        userRepository.save(caller);
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "userId", caller.getUserId(),
+                "preferredLanguage", lang
+        ));
     }
 }

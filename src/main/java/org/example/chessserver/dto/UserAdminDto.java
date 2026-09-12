@@ -13,6 +13,9 @@ public class UserAdminDto {
     private String email;
     private String role;
     private Boolean isBanned;
+    private String banReason;
+    private String banDescription;
+    private String bannedByUser;
     private String countryCode;
     private Integer rating;
     private Boolean rainbowNameEnabled;

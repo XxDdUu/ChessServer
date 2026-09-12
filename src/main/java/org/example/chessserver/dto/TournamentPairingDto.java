@@ -12,9 +12,11 @@ public class TournamentPairingDto {
     private Integer whitePlayerId;
     private String whitePlayerName;
     private Integer whitePlayerRating;
+    private String whitePlayerAvatar;
     private Integer blackPlayerId;
     private String blackPlayerName;
     private Integer blackPlayerRating;
+    private String blackPlayerAvatar;
     private Integer gameId;
     private String result;
     private Boolean isBye;

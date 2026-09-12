@@ -74,6 +74,11 @@ public class FriendService {
                     .username(friendUser.getUsername())
                     .status(status)
                     .rating(rating)
+                    .avatarUrl(friendUser.getAvatarUrl())
+                    .bio(friendUser.getBio())
+                    .countryCode(friendUser.getCountryCode())
+                    .role(friendUser.getRole())
+                    .rainbowNameEnabled(Boolean.TRUE.equals(friendUser.getRainbowNameEnabled()))
                     .build();
         }).collect(Collectors.toList());
     }
@@ -88,6 +93,11 @@ public class FriendService {
                     .username(sender.getUsername())
                     .status("PENDING")
                     .rating(rating)
+                    .avatarUrl(sender.getAvatarUrl())
+                    .bio(sender.getBio())
+                    .countryCode(sender.getCountryCode())
+                    .role(sender.getRole())
+                    .rainbowNameEnabled(Boolean.TRUE.equals(sender.getRainbowNameEnabled()))
                     .build();
         }).collect(Collectors.toList());
     }
@@ -129,6 +139,11 @@ public class FriendService {
                     .username(u.getUsername())
                     .rating(rating)
                     .friendshipStatus(status)
+                    .avatarUrl(u.getAvatarUrl())
+                    .bio(u.getBio())
+                    .countryCode(u.getCountryCode())
+                    .role(u.getRole())
+                    .rainbowNameEnabled(Boolean.TRUE.equals(u.getRainbowNameEnabled()))
                     .build();
         }).collect(Collectors.toList());
     }

@@ -10,4 +10,9 @@ public class FriendDto {
     private String username;
     private String status; // "ONLINE" or "OFFLINE"
     private Integer rating;
+    private String avatarUrl;
+    private String bio;
+    private String countryCode;
+    private String role;
+    private Boolean rainbowNameEnabled;
 }

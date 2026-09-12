@@ -70,9 +70,16 @@ public class AdminController {
     }
 
     @PostMapping("/users/{userId}/ban")
-    public ResponseEntity<?> banUser(HttpServletRequest request, @PathVariable int userId) {
-        verifyAdmin(request);
-        adminService.banUser(userId);
+    public ResponseEntity<?> banUser(
+            HttpServletRequest request,
+            @PathVariable int userId,
+            @RequestBody(required = false) Map<String, String> body) {
+        int adminId = verifyAdmin(request);
+        User admin = userRepository.findById(adminId).orElse(null);
+        String adminName = admin != null ? admin.getUsername() : "Admin";
+        String reason = body != null ? body.get("reason") : null;
+        String description = body != null ? body.get("description") : null;
+        adminService.banUser(userId, reason, description, adminName);
         return ResponseEntity.ok(Map.of("message", "User banned successfully"));
     }
 

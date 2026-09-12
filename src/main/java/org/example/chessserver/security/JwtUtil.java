@@ -29,19 +29,33 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String email, Integer userId, String role) {
+    public String generateToken(String email, Integer userId, String role, String username, Boolean isBanned) {
+        String cleanUsername = username;
+        if (cleanUsername != null && cleanUsername.contains("@")) {
+            cleanUsername = cleanUsername.substring(0, cleanUsername.indexOf("@"));
+        }
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
                 .claim("role", role)
+                .claim("username", cleanUsername)
+                .claim("isBanned", Boolean.TRUE.equals(isBanned))
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key)
                 .compact();
     }
 
+    public String generateToken(String email, Integer userId, String role, String username) {
+        return generateToken(email, userId, role, username, false);
+    }
+
+    public String generateToken(String email, Integer userId, String role) {
+        return generateToken(email, userId, role, null, false);
+    }
+
     public String generateToken(String email, Integer userId) {
-        return generateToken(email, userId, "ROLE_USER");
+        return generateToken(email, userId, "ROLE_USER", null, false);
     }
 
     public Claims getClaims(String token) {

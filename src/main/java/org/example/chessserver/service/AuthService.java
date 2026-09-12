@@ -197,10 +197,6 @@ public class AuthService {
                      .orElseGet(() -> userRepository.findByUsername(identifier)
                              .orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại, vui lòng đăng ký!")));
 
-            if (Boolean.TRUE.equals(user.getIsBanned())) {
-                throw new RuntimeException("Tài khoản của bạn đã bị khóa");
-            }
-
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 throw new RuntimeException("Mật khẩu không chính xác");
             }
@@ -208,7 +204,9 @@ public class AuthService {
             String accessToken = jwtUtil.generateToken(
                     user.getEmail(),
                     user.getUserId(),
-                    user.getRole()
+                    user.getRole(),
+                    user.getUsername(),
+                    user.getIsBanned()
             );
 
             String refreshToken = refreshTokenService.createRefreshToken(
@@ -334,14 +332,12 @@ public class AuthService {
                     return userRepository.save(newUser);
                 });
 
-                if (Boolean.TRUE.equals(user.getIsBanned())) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new MessageResponse("Tài khoản của bạn đã bị khóa"));
-                }
-
                 String accessToken = jwtUtil.generateToken(
                         user.getEmail(),
                         user.getUserId(),
-                        user.getRole()
+                        user.getRole(),
+                        user.getUsername(),
+                        user.getIsBanned()
                 );
 
                 String refreshToken = refreshTokenService.createRefreshToken(

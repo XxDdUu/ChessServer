@@ -14,4 +14,9 @@ public class UserSearchDto {
     private String username;
     private int rating;
     private String friendshipStatus;
+    private String avatarUrl;
+    private String bio;
+    private String countryCode;
+    private String role;
+    private Boolean rainbowNameEnabled;
 }

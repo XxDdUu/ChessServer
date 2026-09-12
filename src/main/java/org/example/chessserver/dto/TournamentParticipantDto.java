@@ -11,6 +11,9 @@ public class TournamentParticipantDto {
     private Integer userId;
     private String username;
     private String countryCode;
+    private String avatarUrl;
+    private String role;
+    private Boolean rainbowNameEnabled;
     private Integer initialRating;
     private BigDecimal currentScore;
     private BigDecimal buchholz;
